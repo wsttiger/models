@@ -26,7 +26,7 @@ using std::vector;
 using std::complex;
 using std::ifstream;
 
-#define NSIZE 4 
+#define NSIZE 24 
 
 typedef bitset<NSIZE> ketT;
 
@@ -63,7 +63,6 @@ public:
   States(int nup, int nsites)
     : nsites(nsites), nup(nup) {
 
-    printf("states constructor ... begin\n");
     int tnstates = 1 << nsites;
 
     // create states for up and down spins
@@ -82,7 +81,6 @@ public:
     }
 
     nst= states.size();
-    printf("states constructor ... end\n");
   }
 
   int get_nst() const {return nst;} 
@@ -335,32 +333,34 @@ public:
   }
 
   void create_ring(int sites) {
-//    double J = 1.0;
-//    for (int i = 0; i < sites-1; i++) {
-//      lattice.push_back(Bond(i,i+1,J));
-//    }
-//    lattice.push_back(Bond(sites-1,0,J));
-//    sectors.push_back(Sector(lattice,sites,-1));
-
     double J = 1.0;
     for (int i = 0; i < sites-1; i++) {
       lattice.push_back(Bond(i,i+1,J));
     }
     lattice.push_back(Bond(sites-1,0,J));
-    for (int i = 0; i < sites; i++) {
-      sectors.push_back(Sector(lattice,sites,i));
-    }
+    sectors.push_back(Sector(lattice,sites,1));
+
+//    double J = 1.0;
+//    for (int i = 0; i < sites-1; i++) {
+//      lattice.push_back(Bond(i,i+1,J));
+//    }
+//    lattice.push_back(Bond(sites-1,0,J));
+//    for (int i = 0; i < sites; i++) {
+//      sectors.push_back(Sector(lattice,sites,i));
+//    }
   }
 
   vector<double> eigenvalues() {
     vector<double> e;
     for (unsigned int is = 0; is < sectors.size(); is++) {
+      printf("sector: %d\n", is);
       Sector s = sectors[is];
       int nst = s.get_nst();
       vector<double> mat = s.make_matrix(); 
       vector<double> es(nst,0.0);
       vector<double> ev(nst*nst,0.0);
       diag_matrix(mat,nst,es,ev);
+      print_matrix(mat,nst,nst);
       std::copy(es.begin(),es.end(),std::back_inserter(e));
     }
     std::sort(e.begin(),e.end(),[](const double& a, const double& b) {return a < b;});
