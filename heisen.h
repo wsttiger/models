@@ -328,26 +328,24 @@ public:
 //    astream.close();
 //  }
 
-  HeisenCalculation(int sites) {
-    create_ring(sites);
+  HeisenCalculation(int sites, int sector) {
+    create_ring(sites, sector);
   }
 
-  void create_ring(int sites) {
+  void create_ring(int sites, int sector) {
     double J = 1.0;
     for (int i = 0; i < sites-1; i++) {
       lattice.push_back(Bond(i,i+1,J));
     }
     lattice.push_back(Bond(sites-1,0,J));
-    sectors.push_back(Sector(lattice,sites,1));
-
-//    double J = 1.0;
-//    for (int i = 0; i < sites-1; i++) {
-//      lattice.push_back(Bond(i,i+1,J));
-//    }
-//    lattice.push_back(Bond(sites-1,0,J));
-//    for (int i = 0; i < sites; i++) {
-//      sectors.push_back(Sector(lattice,sites,i));
-//    }
+    if (sector <= 0) {
+      for (int i = 0; i < sites; i++) {
+        sectors.push_back(Sector(lattice,sites,i));
+      }
+    }
+    else {
+      sectors.push_back(Sector(lattice,sites,sector));
+    }
   }
 
   vector<double> eigenvalues() {
@@ -359,8 +357,11 @@ public:
       vector<double> mat = s.make_matrix(); 
       vector<double> es(nst,0.0);
       vector<double> ev(nst*nst,0.0);
+      const auto tstart = std::chrono::system_clock::now();
       diag_matrix(mat,nst,es,ev);
-      print_matrix(mat,nst,nst);
+      const auto tstop = std::chrono::system_clock::now();
+      const std::chrono::duration<double> time_elapsed = tstop - tstart;
+      std::cout << "Diagonalization took " << time_elapsed.count() << " s" << std::endl;
       std::copy(es.begin(),es.end(),std::back_inserter(e));
     }
     std::sort(e.begin(),e.end(),[](const double& a, const double& b) {return a < b;});
