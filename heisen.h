@@ -13,6 +13,8 @@
 #include <bitset>
 #include <map>
 #include <cassert>
+#include <chrono>
+#include <algorithm>
 
 #include "matrix.h"
 
@@ -232,6 +234,30 @@ public:
 
   vector<double> make_matrix()
   {
+    int nst = states.get_nst(); 
+    vector<double> H(nst*nst,0.0);
+    for (int ist = 0; ist < nst; ist++) {
+      ketT st = states.get_state(ist);
+      for (auto is = 0; is < lattice.size(); is++) {
+        Bond bond = lattice[is];
+        int i = bond.i; int j = bond.j; double J = bond.J;
+        if (st[i] == st[j]) {
+          H[ist*nst+ist] -= 0.25*J; 
+        }
+        else {
+          H[ist*nst+ist] += 0.25*J; 
+          ketT stij = ketT(st);
+          stij[i] = !st[i]; stij[j] = !st[j];
+          unsigned long jst = states.get_state_index(stij);
+          H[ist*nst+jst] -= 0.5*J;
+        }
+      }
+    }
+    return H;
+  }
+
+  vector<double> make_matrix_slow()
+  {
     int nst= states.get_nst();
     vector<double> rmat(nst*nst,0.0);
 
@@ -354,13 +380,17 @@ public:
       printf("sector: %d\n", is);
       Sector s = sectors[is];
       int nst = s.get_nst();
+      auto tstart = std::chrono::system_clock::now();
       vector<double> mat = s.make_matrix(); 
+      auto tstop = std::chrono::system_clock::now();
+      std::chrono::duration<double> time_elapsed = tstop - tstart;
+      std::cout << "Matrix took " << time_elapsed.count() << " s" << std::endl;
       vector<double> es(nst,0.0);
       vector<double> ev(nst*nst,0.0);
-      const auto tstart = std::chrono::system_clock::now();
+      tstart = std::chrono::system_clock::now();
       diag_matrix(mat,nst,es,ev);
-      const auto tstop = std::chrono::system_clock::now();
-      const std::chrono::duration<double> time_elapsed = tstop - tstart;
+      tstop = std::chrono::system_clock::now();
+      time_elapsed = tstop - tstart;
       std::cout << "Diagonalization took " << time_elapsed.count() << " s" << std::endl;
       std::copy(es.begin(),es.end(),std::back_inserter(e));
     }
